@@ -58,10 +58,36 @@ textarea{min-height:110px}
 .json-toggle-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:8px}
 .json-toggle-label .rule-count{background:rgba(124,106,255,.15);color:var(--accent);border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700}
 .json-toggle-chevron{font-size:12px;color:var(--sub);transition:transform .25s}
-.json-card.collapsed .json-area{display:none}
-.json-card.collapsed .upload-zone{display:none}
-.json-card.collapsed .json-status{display:none}
+.json-card.collapsed .json-panel{display:none}
 .json-card.collapsed .json-toggle-chevron{transform:rotate(-90deg)}
+/* ── Mode selector ── */
+.mode-selector{margin-bottom:12px}
+.mode-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sub);margin-bottom:8px;font-family:'Space Mono',monospace}
+.mode-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.mode-tab{
+  padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;
+  font-family:'Syne',sans-serif;cursor:pointer;letter-spacing:.2px;
+  background:var(--bg);border:1px solid var(--border);color:var(--sub);
+  transition:all .18s;
+}
+.mode-tab:hover{border-color:var(--accent);color:var(--accent)}
+.mode-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(124,106,255,.35)}
+
+/* ── Mode desc badge ── */
+.mode-desc{
+  font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:9px 14px;margin-bottom:10px;line-height:1.6;
+  display:none;
+}
+.mode-desc.visible{display:block}
+.mode-desc strong{color:var(--accent)}
+
+/* ── JSON panel (collapsible body) ── */
+.json-panel{display:block}
+.json-card.collapsed .json-panel{display:none}
+/* remove old individual collapse rules that conflict */
+
 .json-toggle-bar{display:flex !important}
 
 .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:12px;position:relative}
@@ -203,6 +229,8 @@ footer{
   <!-- JSON Config -->
   <div class="card json-card" id="jsonCard">
     <div class="card-label"><span class="dot" style="background:var(--accent2)"></span>Konfigurasi JSON</div>
+
+    <!-- Toggle bar (always visible) -->
     <div class="json-toggle-bar" onclick="toggleJsonPanel()">
       <div class="json-toggle-label">
         <span>&#9881;</span>
@@ -211,18 +239,41 @@ footer{
       </div>
       <span class="json-toggle-chevron">&#9660;</span>
     </div>
-    <div class="upload-zone" id="uploadZone">
-      <input type="file" id="jsonFileInput" accept=".json,application/json" onchange="handleFileUpload(event)"/>
-      <div class="upload-zone-inner">
-        <span style="font-size:20px">&#8593;</span>
-        <span>Drag &amp; drop file <strong>.json</strong> atau klik untuk pilih</span>
+
+    <!-- JSON panel body (collapsed by default) -->
+    <div class="json-panel" id="jsonPanel">
+
+      <!-- Mode selector dropdown -->
+      <div class="mode-selector">
+        <div class="mode-label">Sumber JSON</div>
+        <div class="mode-tabs" id="modeTabs">
+          <button class="mode-tab active" data-mode="sistem1" onclick="setMode('sistem1',this)">Sistem 1</button>
+          <button class="mode-tab" data-mode="sistem2" onclick="setMode('sistem2',this)">Sistem 2</button>
+          <button class="mode-tab" data-mode="sistem3" onclick="setMode('sistem3',this)">Sistem 3</button>
+          <button class="mode-tab" data-mode="sistem4" onclick="setMode('sistem4',this)">Sistem 4</button>
+          <button class="mode-tab" data-mode="upload" onclick="setMode('upload',this)">&#8593; Upload</button>
+          <button class="mode-tab" data-mode="scratch" onclick="setMode('scratch',this)">&#9998; Scratch</button>
+        </div>
       </div>
-      <div class="file-name" id="uploadedFileName" style="display:none"></div>
-    </div>
-    <textarea class="json-area" id="jsonConfig" spellcheck="false"></textarea>
-    <div class="json-status idle" id="jsonStatus">
-      <span id="jsonStatusIcon">&#9673;</span>
-      <span id="jsonStatusText">Belum divalidasi</span>
+
+      <!-- Upload zone (only shown in upload mode) -->
+      <div class="upload-zone" id="uploadZone" style="display:none">
+        <input type="file" id="jsonFileInput" accept=".json,application/json" onchange="handleFileUpload(event)"/>
+        <div class="upload-zone-inner">
+          <span style="font-size:20px">&#8593;</span>
+          <span>Drag &amp; drop file <strong>.json</strong> atau klik untuk pilih</span>
+        </div>
+        <div class="file-name" id="uploadedFileName" style="display:none"></div>
+      </div>
+
+      <!-- Mode description badge -->
+      <div class="mode-desc" id="modeDesc"></div>
+
+      <textarea class="json-area" id="jsonConfig" spellcheck="false"></textarea>
+      <div class="json-status idle" id="jsonStatus">
+        <span id="jsonStatusIcon">&#9673;</span>
+        <span id="jsonStatusText">Belum divalidasi</span>
+      </div>
     </div>
   </div>
 
@@ -255,7 +306,7 @@ footer{
   <footer>
     <a class="saweria-btn" href="https://saweria.co/USERNAME" target="_blank" rel="noopener">
       <span style="font-size:20px">&#9749;</span>
-      Support admin di Saweria
+      Traktir Kopi di Saweria
     </a>
     <span class="footer-copy">&copy; 2025 Typing Transformer &mdash; built with Space Mono &amp; love</span>
   </footer>
@@ -289,7 +340,7 @@ footer{
       <div class="help-step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">Siapkan konfigurasi JSON (Opsional)</div>
+          <div class="step-title">Siapkan konfigurasi JSON</div>
           <div class="step-desc">Format: <code>[{"abjad":"a","trans":"AAA"},...]</code><br><br><code>abjad</code> = karakter asli &nbsp;|&nbsp; <code>trans</code> = penggantinya.</div>
         </div>
       </div>
@@ -324,6 +375,117 @@ footer{
 </div>
 
 <script>
+// ── Preset JSON systems ───────────────────────────────────────────────────
+var SISTEM1_JSON=[ // repeat x5
+  {"abjad":"a","trans":"aaaaa"},{"abjad":"b","trans":"bbbbb"},{"abjad":"c","trans":"ccccc"},
+  {"abjad":"d","trans":"ddddd"},{"abjad":"e","trans":"eeeee"},{"abjad":"f","trans":"fffff"},
+  {"abjad":"g","trans":"ggggg"},{"abjad":"h","trans":"hhhhh"},{"abjad":"i","trans":"iiiii"},
+  {"abjad":"j","trans":"jjjjj"},{"abjad":"k","trans":"kkkkk"},{"abjad":"l","trans":"lllll"},
+  {"abjad":"m","trans":"mmmmm"},{"abjad":"n","trans":"nnnnn"},{"abjad":"o","trans":"ooooo"},
+  {"abjad":"p","trans":"ppppp"},{"abjad":"q","trans":"qqqqq"},{"abjad":"r","trans":"rrrrr"},
+  {"abjad":"s","trans":"sssss"},{"abjad":"t","trans":"ttttt"},{"abjad":"u","trans":"uuuuu"},
+  {"abjad":"v","trans":"vvvvv"},{"abjad":"w","trans":"wwwww"},{"abjad":"x","trans":"xxxxx"},
+  {"abjad":"y","trans":"yyyyy"},{"abjad":"z","trans":"zzzzz"},
+  {"abjad":"A","trans":"AAAAA"},{"abjad":"B","trans":"BBBBB"},{"abjad":"C","trans":"CCCCC"},
+  {"abjad":"D","trans":"DDDDD"},{"abjad":"E","trans":"EEEEE"},{"abjad":"F","trans":"FFFFF"},
+  {"abjad":"G","trans":"GGGGG"},{"abjad":"H","trans":"HHHHH"},{"abjad":"I","trans":"IIIII"},
+  {"abjad":"J","trans":"JJJJJ"},{"abjad":"K","trans":"KKKKK"},{"abjad":"L","trans":"LLLLL"},
+  {"abjad":"M","trans":"MMMMM"},{"abjad":"N","trans":"NNNNN"},{"abjad":"O","trans":"OOOOO"},
+  {"abjad":"P","trans":"PPPPP"},{"abjad":"Q","trans":"QQQQQ"},{"abjad":"R","trans":"RRRRR"},
+  {"abjad":"S","trans":"SSSSS"},{"abjad":"T","trans":"TTTTT"},{"abjad":"U","trans":"UUUUU"},
+  {"abjad":"V","trans":"VVVVV"},{"abjad":"W","trans":"WWWWW"},{"abjad":"X","trans":"XXXXX"},
+  {"abjad":"Y","trans":"YYYYY"},{"abjad":"Z","trans":"ZZZZZ"},
+  {"abjad":"0","trans":"00000"},{"abjad":"1","trans":"11111"},{"abjad":"2","trans":"22222"},
+  {"abjad":"3","trans":"33333"},{"abjad":"4","trans":"44444"},{"abjad":"5","trans":"55555"},
+  {"abjad":"6","trans":"66666"},{"abjad":"7","trans":"77777"},{"abjad":"8","trans":"88888"},
+  {"abjad":"9","trans":"99999"},{"abjad":" ","trans":"     "},{"abjad":".","trans":"....."},
+  {"abjad":"!","trans":"!!!!!"},{"abjad":"?","trans":"?????"}
+];
+
+var SISTEM2_JSON=[ // leet speak / 1337
+  {"abjad":"a","trans":"4"},{"abjad":"b","trans":"8"},{"abjad":"c","trans":"("},
+  {"abjad":"d","trans":"|}"},{"abjad":"e","trans":"3"},{"abjad":"f","trans":"|="},
+  {"abjad":"g","trans":"9"},{"abjad":"h","trans":"|-|"},{"abjad":"i","trans":"!"},
+  {"abjad":"j","trans":"_|"},{"abjad":"k","trans":"|<"},{"abjad":"l","trans":"1"},
+  {"abjad":"m","trans":"|V|"},{"abjad":"n","trans":"|\|"},{"abjad":"o","trans":"0"},
+  {"abjad":"p","trans":"|*"},{"abjad":"q","trans":"0,"},{"abjad":"r","trans":"|2"},
+  {"abjad":"s","trans":"5"},{"abjad":"t","trans":"7"},{"abjad":"u","trans":"|_|"},
+  {"abjad":"v","trans":"\/"},{"abjad":"w","trans":"\|/"},{"abjad":"x","trans":"><"},
+  {"abjad":"y","trans":"'/"},{"abjad":"z","trans":"2"},
+  {"abjad":"A","trans":"4"},{"abjad":"B","trans":"8"},{"abjad":"C","trans":"("},
+  {"abjad":"D","trans":"|}"},{"abjad":"E","trans":"3"},{"abjad":"F","trans":"|="},
+  {"abjad":"G","trans":"9"},{"abjad":"H","trans":"|-|"},{"abjad":"I","trans":"!"},
+  {"abjad":"J","trans":"_|"},{"abjad":"K","trans":"|<"},{"abjad":"L","trans":"1"},
+  {"abjad":"M","trans":"|V|"},{"abjad":"N","trans":"|\|"},{"abjad":"O","trans":"0"},
+  {"abjad":"P","trans":"|*"},{"abjad":"Q","trans":"0,"},{"abjad":"R","trans":"|2"},
+  {"abjad":"S","trans":"5"},{"abjad":"T","trans":"7"},{"abjad":"U","trans":"|_|"},
+  {"abjad":"V","trans":"\/"},{"abjad":"W","trans":"\|/"},{"abjad":"X","trans":"><"},
+  {"abjad":"Y","trans":"'/"},{"abjad":"Z","trans":"2"},{"abjad":" ","trans":" "}
+];
+
+var SISTEM3_JSON=[ // morse-style dots & dashes
+  {"abjad":"a","trans":".-"},{"abjad":"b","trans":"-..."},{"abjad":"c","trans":"-.-."},
+  {"abjad":"d","trans":"-.."},{"abjad":"e","trans":"."},{"abjad":"f","trans":"..-."},
+  {"abjad":"g","trans":"--."},{"abjad":"h","trans":"...."},{"abjad":"i","trans":".."},
+  {"abjad":"j","trans":".---"},{"abjad":"k","trans":"-.-"},{"abjad":"l","trans":".-.."},
+  {"abjad":"m","trans":"--"},{"abjad":"n","trans":"-."},{"abjad":"o","trans":"---"},
+  {"abjad":"p","trans":".--."},{"abjad":"q","trans":"--.-"},{"abjad":"r","trans":".-."},
+  {"abjad":"s","trans":"..."},{"abjad":"t","trans":"-"},{"abjad":"u","trans":"..-"},
+  {"abjad":"v","trans":"...-"},{"abjad":"w","trans":".--"},{"abjad":"x","trans":"-..-"},
+  {"abjad":"y","trans":"-.--"},{"abjad":"z","trans":"--.."},
+  {"abjad":"A","trans":".-"},{"abjad":"B","trans":"-..."},{"abjad":"C","trans":"-.-."},
+  {"abjad":"D","trans":"-.."},{"abjad":"E","trans":"."},{"abjad":"F","trans":"..-."},
+  {"abjad":"G","trans":"--."},{"abjad":"H","trans":"...."},{"abjad":"I","trans":".."},
+  {"abjad":"J","trans":".---"},{"abjad":"K","trans":"-.-"},{"abjad":"L","trans":".-.."},
+  {"abjad":"M","trans":"--"},{"abjad":"N","trans":"-."},{"abjad":"O","trans":"---"},
+  {"abjad":"P","trans":".--."},{"abjad":"Q","trans":"--.-"},{"abjad":"R","trans":".-."},
+  {"abjad":"S","trans":"..."},{"abjad":"T","trans":"-"},{"abjad":"U","trans":"..-"},
+  {"abjad":"V","trans":"...-"},{"abjad":"W","trans":".--"},{"abjad":"X","trans":"-..-"},
+  {"abjad":"Y","trans":"-.--"},{"abjad":"Z","trans":"--.."},
+  {"abjad":"0","trans":"-----"},{"abjad":"1","trans":".----"},{"abjad":"2","trans":"..---"},
+  {"abjad":"3","trans":"...--"},{"abjad":"4","trans":"....-"},{"abjad":"5","trans":"....."},
+  {"abjad":"6","trans":"-...."},{"abjad":"7","trans":"--..."},{"abjad":"8","trans":"---.."},
+  {"abjad":"9","trans":"----."},{"abjad":" ","trans":" / "}
+];
+
+var SISTEM4_JSON=[ // reverse / mirror ASCII art style
+  {"abjad":"a","trans":"ɐ"},{"abjad":"b","trans":"q"},{"abjad":"c","trans":"ɔ"},
+  {"abjad":"d","trans":"p"},{"abjad":"e","trans":"ǝ"},{"abjad":"f","trans":"ɟ"},
+  {"abjad":"g","trans":"ɓ"},{"abjad":"h","trans":"ɥ"},{"abjad":"i","trans":"ᴉ"},
+  {"abjad":"j","trans":"ſ"},{"abjad":"k","trans":"ʞ"},{"abjad":"l","trans":"l"},
+  {"abjad":"m","trans":"ɯ"},{"abjad":"n","trans":"u"},{"abjad":"o","trans":"o"},
+  {"abjad":"p","trans":"d"},{"abjad":"q","trans":"b"},{"abjad":"r","trans":"ɹ"},
+  {"abjad":"s","trans":"s"},{"abjad":"t","trans":"ʇ"},{"abjad":"u","trans":"n"},
+  {"abjad":"v","trans":"ʌ"},{"abjad":"w","trans":"ʍ"},{"abjad":"x","trans":"x"},
+  {"abjad":"y","trans":"ʎ"},{"abjad":"z","trans":"z"},
+  {"abjad":"A","trans":"∀"},{"abjad":"B","trans":"B"},{"abjad":"C","trans":"Ɔ"},
+  {"abjad":"D","trans":"D"},{"abjad":"E","trans":"Ǝ"},{"abjad":"F","trans":"Ⅎ"},
+  {"abjad":"G","trans":"ɢ"},{"abjad":"H","trans":"H"},{"abjad":"I","trans":"I"},
+  {"abjad":"J","trans":"J"},{"abjad":"K","trans":"K"},{"abjad":"L","trans":"J"},
+  {"abjad":"M","trans":"W"},{"abjad":"N","trans":"N"},{"abjad":"O","trans":"O"},
+  {"abjad":"P","trans":"Ԁ"},{"abjad":"Q","trans":"Q"},{"abjad":"R","trans":"R"},
+  {"abjad":"S","trans":"S"},{"abjad":"T","trans":"⊥"},{"abjad":"U","trans":"∩"},
+  {"abjad":"V","trans":"Λ"},{"abjad":"W","trans":"M"},{"abjad":"X","trans":"X"},
+  {"abjad":"Y","trans":"⅄"},{"abjad":"Z","trans":"Z"},
+  {"abjad":"1","trans":"L"},{"abjad":"2","trans":"Z"},{"abjad":"3","trans":"Ɛ"},
+  {"abjad":"4","trans":"ᔾ"},{"abjad":"5","trans":"S"},{"abjad":"6","trans":"9"},
+  {"abjad":"7","trans":"L"},{"abjad":"8","trans":"8"},{"abjad":"9","trans":"6"},
+  {"abjad":"0","trans":"0"},{"abjad":" ","trans":" "},{"abjad":"?","trans":"¿"},
+  {"abjad":"!","trans":"¡"},{"abjad":".","trans":"˙"},{"abjad":"(","trans":")"},
+  {"abjad":")","trans":"("},{"abjad":"&","trans":"⅋"}
+];
+
+var MODE_META = {
+  sistem1: {label:'Sistem 1', desc:'<strong>Repeat ×5</strong> — Setiap karakter diulang 5 kali. Cocok untuk teks dekoratif panjang.'},
+  sistem2: {label:'Sistem 2', desc:'<strong>Leet Speak</strong> — Konversi ke notasi 1337 hacker klasik. Huruf diganti simbol ASCII yang mirip.'},
+  sistem3: {label:'Sistem 3', desc:'<strong>Morse Code</strong> — Karakter diubah ke kode titik & garis International Morse Code.'},
+  sistem4: {label:'Sistem 4', desc:'<strong>Flip / Upside-down</strong> — Teks dibalik ke karakter Unicode terbalik. Cocok untuk efek “terbalik”.'},
+  upload:  {label:'Upload',   desc:'<strong>File JSON kustom</strong> — Upload file .json kamu sendiri dengan aturan transformasi bebas.'},
+  scratch: {label:'Scratch',  desc:'<strong>Tulis sendiri</strong> — Edit JSON langsung di textarea. Bebas definisikan aturan transformasimu.'}
+};
+
+var _currentMode = 'sistem1';
+
 var DEFAULT_JSON=[
   {"abjad":"a","trans":"aaaaa"},{"abjad":"b","trans":"bbbbb"},{"abjad":"c","trans":"ccccc"},
   {"abjad":"d","trans":"ddddd"},{"abjad":"e","trans":"eeeee"},{"abjad":"f","trans":"fffff"},
@@ -430,13 +592,11 @@ function copyOutput(){
 
 function loadDefault(){
   _rawJSON=null;
-  document.getElementById('jsonConfig').value=JSON.stringify(DEFAULT_JSON,null,2);
-  autoResizeJSON();
   document.getElementById('uploadedFileName').style.display='none';
   document.getElementById('jsonFileInput').value='';
-  updateJSONStatus('idle','\u25c9','Belum divalidasi');
-  updateToggleCount();
-  showToast('success','\u21ba','JSON direset ke default.');
+  var activeTab = document.querySelector('.mode-tab.active');
+  setMode(_currentMode, activeTab);
+  showToast('success','\u21ba','JSON direset.');
 }
 
 function clearAll(){
@@ -482,6 +642,67 @@ function handleFileUpload(event){
 
 function toggleJsonPanel(){document.getElementById('jsonCard').classList.toggle('collapsed')}
 
+function setMode(mode, btn) {
+  _currentMode = mode;
+  // update tab active state
+  var tabs = document.querySelectorAll('.mode-tab');
+  for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
+  if (btn) btn.classList.add('active');
+
+  // show/hide upload zone
+  var uz = document.getElementById('uploadZone');
+  uz.style.display = (mode === 'upload') ? 'block' : 'none';
+
+  // update desc badge
+  var desc = document.getElementById('modeDesc');
+  var meta = MODE_META[mode];
+  if (meta && meta.desc) {
+    desc.innerHTML = meta.desc;
+    desc.classList.add('visible');
+  } else {
+    desc.classList.remove('visible');
+  }
+
+  // load preset if not upload/scratch
+  var ta = document.getElementById('jsonConfig');
+  var presets = {sistem1: SISTEM1_JSON, sistem2: SISTEM2_JSON, sistem3: SISTEM3_JSON, sistem4: SISTEM4_JSON};
+  if (presets[mode]) {
+    _rawJSON = null;
+    ta.value = JSON.stringify(presets[mode], null, 2);
+    ta.readOnly = true;
+    ta.style.opacity = '0.7';
+    ta.style.cursor = 'default';
+    autoResizeJSON();
+    try {
+      var d = parseJSONConfig();
+      updateJSONStatus('ok', '✓', 'Valid — ' + d.length + ' aturan');
+      updateToggleCount();
+    } catch(e) { updateJSONStatus('err', '✕', e.message); }
+  } else {
+    // upload or scratch: make editable
+    ta.readOnly = false;
+    ta.style.opacity = '1';
+    ta.style.cursor = '';
+    if (mode === 'scratch') {
+      _rawJSON = null;
+      ta.value = '[
+  {"abjad": "a", "trans": "A"},
+  {"abjad": "b", "trans": "B"}
+]';
+      autoResizeJSON();
+      updateJSONStatus('idle', '◉', 'Edit JSON kamu di sini...');
+      updateToggleCount();
+    } else if (mode === 'upload') {
+      // keep current content if already uploaded
+      if (!_rawJSON) {
+        ta.value = '';
+        updateJSONStatus('idle', '◉', 'Upload file .json untuk mulai');
+        document.getElementById('toggleRuleCount').textContent = '0 aturan';
+      }
+    }
+  }
+}
+
 function openHelp(){document.getElementById('helpModal').classList.add('open');document.body.style.overflow='hidden'}
 function closeHelp(){document.getElementById('helpModal').classList.remove('open');document.body.style.overflow=''}
 function closeHelpOutside(e){if(e.target===document.getElementById('helpModal'))closeHelp()}
@@ -518,10 +739,7 @@ document.addEventListener('keydown',function(e){
     document.documentElement.classList.add('light');
     document.getElementById('themeLabel').textContent='Dark';
   }
-  document.getElementById('jsonConfig').value=JSON.stringify(DEFAULT_JSON,null,2);
-  autoResizeJSON();
-  updateJSONStatus('idle','\u25c9','Belum divalidasi');
-  updateToggleCount();
+  setMode('sistem1', document.querySelector('.mode-tab[data-mode="sistem1"]'));
   document.getElementById('jsonCard').classList.add('collapsed');
 })();
 </script>
