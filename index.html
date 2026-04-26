@@ -62,7 +62,7 @@ textarea{min-height:110px}
 .json-card.collapsed .upload-zone{display:none}
 .json-card.collapsed .json-status{display:none}
 .json-card.collapsed .json-toggle-chevron{transform:rotate(-90deg)}
-@media(max-width:600px){.json-toggle-bar{display:flex}}
+.json-toggle-bar{display:flex !important}
 
 .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:12px;position:relative}
 .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(124,106,255,.06)}
@@ -522,7 +522,7 @@ document.addEventListener('keydown',function(e){
   autoResizeJSON();
   updateJSONStatus('idle','\u25c9','Belum divalidasi');
   updateToggleCount();
-  if(window.innerWidth<=600)document.getElementById('jsonCard').classList.add('collapsed');
+  document.getElementById('jsonCard').classList.add('collapsed');
 })();
 </script>
 </body>
