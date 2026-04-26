@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Typing Transformer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:#0a0a0f; --surface:#111118; --border:#1e1e2e;
+  --accent:#7c6aff; --accent2:#ff6ac1;
+  --muted:#3a3a5c; --text:#e2e2f0; --sub:#6b6b8a;
+  --green:#4ade80; --red:#f87171;
+  --radius:12px;
+  --blob1:rgba(124,106,255,.12); --blob2:rgba(255,106,193,.09);
+}
+html.light {
+  --bg:#f4f3ff; --surface:#ffffff; --border:#dddaf7;
+  --accent:#6254e8; --accent2:#e8449f;
+  --muted:#b8b4d8; --text:#1a1730; --sub:#7b76a8;
+  --green:#16a34a; --red:#dc2626;
+  --blob1:rgba(98,84,232,.07); --blob2:rgba(232,68,159,.05);
+}
+
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;transition:background .3s,color .3s}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.35}
+.blob{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;transition:background .4s}
+.blob-1{width:500px;height:500px;background:var(--blob1);top:-120px;left:-120px}
+.blob-2{width:400px;height:400px;background:var(--blob2);bottom:-80px;right:-80px}
+
+.wrapper{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:48px 24px 0}
+
+header{display:flex;align-items:flex-end;gap:16px;margin-bottom:48px;animation:fadeUp .5s ease both}
+.logo-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 0 30px rgba(124,106,255,.3)}
+.logo-text h1{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.logo-text span{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);letter-spacing:2px;text-transform:uppercase}
+.theme-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:40px;padding:6px 14px 6px 10px;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--sub);transition:all .2s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.toggle-track{width:32px;height:18px;border-radius:99px;background:var(--muted);position:relative;flex-shrink:0;transition:background .25s}
+.toggle-thumb{width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+html.light .toggle-track{background:var(--accent)}
+html.light .toggle-thumb{transform:translateX(14px)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;animation:fadeUp .5s ease both;transition:background .3s,border-color .3s}
+.card:nth-child(2){animation-delay:.06s}.card:nth-child(3){animation-delay:.12s}.card:nth-child(4){animation-delay:.18s}.card:nth-child(5){animation-delay:.22s}
+.card-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.card-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+textarea,.json-area{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;line-height:1.7;padding:14px 16px;resize:vertical;outline:none;transition:border-color .2s,background .3s,color .3s}
+textarea:focus,.json-area:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,255,.12)}
+textarea{min-height:110px}
+.json-area{min-height:160px;max-height:none;height:auto}
+
+.json-toggle-bar{display:none;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:10px;transition:border-color .2s;user-select:none;-webkit-user-select:none}
+.json-toggle-bar:hover{border-color:var(--accent)}
+.json-toggle-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);display:flex;align-items:center;gap:8px}
+.json-toggle-label .rule-count{background:rgba(124,106,255,.15);color:var(--accent);border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700}
+.json-toggle-chevron{font-size:12px;color:var(--sub);transition:transform .25s}
+.json-card.collapsed .json-area{display:none}
+.json-card.collapsed .upload-zone{display:none}
+.json-card.collapsed .json-status{display:none}
+.json-card.collapsed .json-toggle-chevron{transform:rotate(-90deg)}
+@media(max-width:600px){.json-toggle-bar{display:flex}}
+
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:12px;position:relative}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(124,106,255,.06)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone-inner{pointer-events:none;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--sub);font-family:'Space Mono',monospace}
+.upload-zone .file-name{margin-top:6px;font-size:11px;font-family:'Space Mono',monospace;color:var(--accent);font-weight:700;pointer-events:none}
+
+.json-status{margin-top:8px;font-size:11px;font-family:'Space Mono',monospace;display:flex;align-items:center;gap:6px;transition:all .2s}
+.json-status.ok{color:var(--green)}.json-status.err{color:var(--red)}.json-status.idle{color:var(--muted)}
+
+.btn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+button{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:.3px;transition:transform .15s,box-shadow .15s}
+button:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#9b6aff);color:#fff;box-shadow:0 4px 20px rgba(124,106,255,.35)}
+.btn-primary:hover{box-shadow:0 6px 28px rgba(124,106,255,.5)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub)}
+.btn-ghost:hover{border-color:var(--muted);color:var(--text)}
+
+.output-wrap{position:relative}
+#outputBox{width:100%;min-height:110px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;line-height:1.7;padding:14px 16px;white-space:pre-wrap;word-break:break-all;overflow-y:auto;max-height:280px;transition:background .3s,border-color .3s,color .3s}
+#outputBox.empty{color:var(--muted);font-style:italic}
+.copy-btn{position:absolute;top:10px;right:10px;padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:1px;border-radius:6px;cursor:pointer;background:var(--surface);border:1px solid var(--border);color:var(--sub);font-family:'Syne',sans-serif;text-transform:uppercase;transition:all .15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.copy-btn.copied{border-color:var(--green);color:var(--green)}
+
+.stats-bar{display:flex;gap:24px;flex-wrap:wrap;margin-top:14px;font-family:'Space Mono',monospace;font-size:11px;color:var(--sub)}
+.stat{display:flex;align-items:center;gap:6px}
+.stat-val{color:var(--text);font-weight:700}
+.stat-badge{padding:2px 8px;border-radius:20px;background:rgba(124,106,255,.15);color:var(--accent);font-size:10px;font-weight:700}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:1;
+  text-align:center;
+  padding:40px 24px 64px;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+}
+.saweria-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 26px;
+  background:linear-gradient(135deg,#ff6b35,#ff9a3c);
+  color:#fff;border-radius:40px;
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+  text-decoration:none;letter-spacing:.2px;
+  box-shadow:0 4px 24px rgba(255,107,53,.4);
+  transition:box-shadow .2s,transform .15s;
+}
+.saweria-btn:hover{box-shadow:0 6px 32px rgba(255,107,53,.6);transform:translateY(-2px)}
+.saweria-btn:active{transform:scale(.97)}
+.footer-copy{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);letter-spacing:.5px}
+
+/* ── HELP FAB ── */
+.help-fab{
+  position:fixed;bottom:28px;right:24px;z-index:300;
+  width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#9b6aff);
+  color:#fff;border:none;cursor:pointer;
+  font-size:22px;font-weight:800;font-family:'Syne',sans-serif;
+  box-shadow:0 4px 24px rgba(124,106,255,.5);
+  transition:box-shadow .2s,transform .15s;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  line-height:1;
+}
+.help-fab:hover{box-shadow:0 6px 32px rgba(124,106,255,.7);transform:scale(1.1)}
+.help-fab:active{transform:scale(.93)}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;width:100%;max-width:480px;max-height:88vh;
+  overflow-y:auto;padding:28px;
+  transform:translateY(24px) scale(.96);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),background .3s,border-color .3s;
+}
+.modal-overlay.open .modal{transform:none}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-title{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.modal-close{width:34px;height:34px;border-radius:9px;background:transparent;border:1px solid var(--border);color:var(--sub);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:monospace;padding:0}
+.modal-close:hover{border-color:var(--accent);color:var(--accent)}
+
+.help-steps{display:flex;flex-direction:column;gap:16px}
+.help-step{display:flex;gap:14px}
+.step-num{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#9b6aff);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.step-body{flex:1;padding-top:3px}
+.step-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.step-desc{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);line-height:1.65}
+.step-desc code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--accent);font-size:10px}
+.modal-divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.modal-tip{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;line-height:1.7}
+.modal-tip strong{color:var(--accent);font-weight:700}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--border);border-radius:40px;padding:10px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:500;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{border-color:var(--red)}.toast.error .ti{color:var(--red)}
+.toast.success{border-color:var(--green)}.toast.success .ti{color:var(--green)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--muted);border-radius:99px}
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-icon">&#9000;&#65039;</div>
+    <div class="logo-text">
+      <h1>Typing Transformer</h1>
+      <span>Character-level text mutation engine</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span id="themeLabel">Light</span>
+    </button>
+  </header>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-label"><span class="dot"></span>Input Teks</div>
+    <textarea id="inputText" placeholder="Ketik atau paste teks di sini..."></textarea>
+  </div>
+
+  <!-- JSON Config -->
+  <div class="card json-card" id="jsonCard">
+    <div class="card-label"><span class="dot" style="background:var(--accent2)"></span>Konfigurasi JSON</div>
+    <div class="json-toggle-bar" onclick="toggleJsonPanel()">
+      <div class="json-toggle-label">
+        <span>&#9881;</span>
+        <span>Konfigurasi JSON</span>
+        <span class="rule-count" id="toggleRuleCount">0 aturan</span>
+      </div>
+      <span class="json-toggle-chevron">&#9660;</span>
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="jsonFileInput" accept=".json,application/json" onchange="handleFileUpload(event)"/>
+      <div class="upload-zone-inner">
+        <span style="font-size:20px">&#8593;</span>
+        <span>Drag &amp; drop file <strong>.json</strong> atau klik untuk pilih</span>
+      </div>
+      <div class="file-name" id="uploadedFileName" style="display:none"></div>
+    </div>
+    <textarea class="json-area" id="jsonConfig" spellcheck="false"></textarea>
+    <div class="json-status idle" id="jsonStatus">
+      <span id="jsonStatusIcon">&#9673;</span>
+      <span id="jsonStatusText">Belum divalidasi</span>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn-primary" onclick="transform()">&#9889; Transform</button>
+      <button class="btn-ghost" onclick="validateJSON()">&#10003; Validasi JSON</button>
+      <button class="btn-ghost" onclick="loadDefault()">&#8635; Reset JSON</button>
+      <button class="btn-ghost" onclick="clearAll()">&#10005; Hapus Semua</button>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="card">
+    <div class="card-label"><span class="dot" style="background:var(--green)"></span>Hasil Transformasi</div>
+    <div class="output-wrap">
+      <div id="outputBox" class="empty">Hasil transformasi akan muncul di sini...</div>
+      <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat">Input: <span class="stat-val" id="statIn">0</span> karakter</div>
+      <div class="stat">Output: <span class="stat-val" id="statOut">0</span> karakter</div>
+      <div class="stat">Terganti: <span class="stat-val" id="statReplaced">0</span> karakter</div>
+      <div class="stat"><span class="stat-badge" id="statRatio">x1.0</span></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <a class="saweria-btn" href="https://saweria.co/USERNAME" target="_blank" rel="noopener">
+      <span style="font-size:20px">&#9749;</span>
+      Traktir Kopi di Saweria
+    </a>
+    <span class="footer-copy">&copy; 2025 Typing Transformer &mdash; built with Space Mono &amp; love</span>
+  </footer>
+
+</div><!-- /wrapper -->
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="ti" id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- Help FAB -->
+<button class="help-fab" onclick="openHelp()">?</button>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal" onclick="closeHelpOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#9889; Cara Pakai</span>
+      <button class="modal-close" onclick="closeHelp()">&#10005;</button>
+    </div>
+    <div class="help-steps">
+      <div class="help-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Tulis atau paste teks</div>
+          <div class="step-desc">Masukkan teks apapun di kolom <strong>Input Teks</strong>. Bisa huruf, angka, simbol.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Siapkan konfigurasi JSON</div>
+          <div class="step-desc">Format: <code>[{"abjad":"a","trans":"AAA"},...]</code><br><br><code>abjad</code> = karakter asli &nbsp;|&nbsp; <code>trans</code> = penggantinya.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Upload file JSON (opsional)</div>
+          <div class="step-desc">Klik area upload atau drag &amp; drop file <code>.json</code>. JSON default sudah tersedia dan siap dipakai langsung.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Klik Transform</div>
+          <div class="step-desc">Tekan tombol <strong>Transform</strong> atau shortcut <code>Ctrl+Enter</code>. Hasil muncul seketika.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Salin hasil</div>
+          <div class="step-desc">Klik tombol <strong>Copy</strong> di pojok kanan output untuk menyalin ke clipboard.</div>
+        </div>
+      </div>
+    </div>
+    <hr class="modal-divider"/>
+    <div class="modal-tip">
+      <strong>Tips:</strong> Transformasi bersifat <strong>case-sensitive</strong> &mdash;
+      <code>a</code> dan <code>A</code> dianggap berbeda. Karakter yang tidak ada di JSON akan dibiarkan seperti semula.
+    </div>
+  </div>
+</div>
+
+<script>
+var DEFAULT_JSON=[
+  {"abjad":"a","trans":"aaaaa"},{"abjad":"b","trans":"bbbbb"},{"abjad":"c","trans":"ccccc"},
+  {"abjad":"d","trans":"ddddd"},{"abjad":"e","trans":"eeeee"},{"abjad":"f","trans":"fffff"},
+  {"abjad":"g","trans":"ggggg"},{"abjad":"h","trans":"hhhhh"},{"abjad":"i","trans":"iiiii"},
+  {"abjad":"j","trans":"jjjjj"},{"abjad":"k","trans":"kkkkk"},{"abjad":"l","trans":"lllll"},
+  {"abjad":"m","trans":"mmmmm"},{"abjad":"n","trans":"nnnnn"},{"abjad":"o","trans":"ooooo"},
+  {"abjad":"p","trans":"ppppp"},{"abjad":"q","trans":"qqqqq"},{"abjad":"r","trans":"rrrrr"},
+  {"abjad":"s","trans":"sssss"},{"abjad":"t","trans":"ttttt"},{"abjad":"u","trans":"uuuuu"},
+  {"abjad":"v","trans":"vvvvv"},{"abjad":"w","trans":"wwwww"},{"abjad":"x","trans":"xxxxx"},
+  {"abjad":"y","trans":"yyyyy"},{"abjad":"z","trans":"zzzzz"},
+  {"abjad":"A","trans":"AAAAA"},{"abjad":"B","trans":"BBBBB"},{"abjad":"C","trans":"CCCCC"},
+  {"abjad":"D","trans":"DDDDD"},{"abjad":"E","trans":"EEEEE"},{"abjad":"F","trans":"FFFFF"},
+  {"abjad":"G","trans":"GGGGG"},{"abjad":"H","trans":"HHHHH"},{"abjad":"I","trans":"IIIII"},
+  {"abjad":"J","trans":"JJJJJ"},{"abjad":"K","trans":"KKKKK"},{"abjad":"L","trans":"LLLLL"},
+  {"abjad":"M","trans":"MMMMM"},{"abjad":"N","trans":"NNNNN"},{"abjad":"O","trans":"OOOOO"},
+  {"abjad":"P","trans":"PPPPP"},{"abjad":"Q","trans":"QQQQQ"},{"abjad":"R","trans":"RRRRR"},
+  {"abjad":"S","trans":"SSSSS"},{"abjad":"T","trans":"TTTTT"},{"abjad":"U","trans":"UUUUU"},
+  {"abjad":"V","trans":"VVVVV"},{"abjad":"W","trans":"WWWWW"},{"abjad":"X","trans":"XXXXX"},
+  {"abjad":"Y","trans":"YYYYY"},{"abjad":"Z","trans":"ZZZZZ"},
+  {"abjad":"0","trans":"00000"},{"abjad":"1","trans":"11111"},{"abjad":"2","trans":"22222"},
+  {"abjad":"3","trans":"33333"},{"abjad":"4","trans":"44444"},{"abjad":"5","trans":"55555"},
+  {"abjad":"6","trans":"66666"},{"abjad":"7","trans":"77777"},{"abjad":"8","trans":"88888"},
+  {"abjad":"9","trans":"99999"},
+  {"abjad":" ","trans":"     "},{"abjad":".","trans":"....."},{"abjad":",","trans":	",,,,,"},
+  {"abjad":"!","trans":"!!!!!"},{"abjad":"?","trans":"?????"},{"abjad":"@","trans":"@@@@@"},
+  {"abjad":"#","trans":"#####"},{"abjad":"$","trans":"$$$$$"},{"abjad":"%","trans":"%%%%%"},
+  {"abjad":"&","trans":"&&&&&"},{"abjad":"*","trans":"*****"},{"abjad":"(","trans":"((((("},
+  {"abjad":")","trans":")))))"},{"abjad":"-","trans":"-----"},{"abjad":"_","trans":"_____"},
+  {"abjad":"=","trans":"====="},{"abjad":"+","trans":"+++++"},{"abjad":":","trans":":::::"},
+  {"abjad":";","trans":";;;;;"},{"abjad":"/","trans":"/////"},{"abjad":"|","trans":"|||||"}
+];
+
+var _rawJSON=null,_toastTimer=null,_jTimer=null;
+
+function autoResizeJSON(){var e=document.getElementById('jsonConfig');e.style.height='auto';e.style.height=e.scrollHeight+'px'}
+
+function showToast(type,icon,msg){
+  var t=document.getElementById('toast');
+  document.getElementById('toastIcon').textContent=icon;
+  document.getElementById('toastMsg').textContent=msg;
+  t.className='toast '+type+' show';
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){t.classList.remove('show')},3000);
+}
+
+function updateJSONStatus(type,icon,text){
+  var el=document.getElementById('jsonStatus');
+  el.className='json-status '+type;
+  document.getElementById('jsonStatusIcon').textContent=icon;
+  document.getElementById('jsonStatusText').textContent=text;
+}
+
+function updateToggleCount(){
+  try{var d=parseJSONConfig();document.getElementById('toggleRuleCount').textContent=d.length+' aturan'}
+  catch(e){document.getElementById('toggleRuleCount').textContent='JSON'}
+}
+
+function parseJSONConfig(){
+  var raw=(_rawJSON!==null?_rawJSON:document.getElementById('jsonConfig').value).trim();
+  if(!raw)throw new Error('JSON kosong');
+  var p=JSON.parse(raw);
+  if(!Array.isArray(p))throw new Error('JSON harus berupa array');
+  for(var i=0;i<p.length;i++){
+    if(typeof p[i].abjad!=='string'||typeof p[i].trans!=='string')
+      throw new Error('Item '+i+' harus punya field "abjad" dan "trans"');
+  }
+  return p;
+}
+
+function validateJSON(){
+  try{var d=parseJSONConfig();updateJSONStatus('ok','\u2713','Valid \u2014 '+d.length+' aturan');showToast('success','\u2713','JSON valid. '+d.length+' aturan siap.')}
+  catch(e){updateJSONStatus('err','\u2715','Tidak valid: '+e.message);showToast('error','\u2715','JSON tidak valid: '+e.message)}
+}
+
+function transform(){
+  var inp=document.getElementById('inputText').value;
+  if(!inp){showToast('error','!','Input teks kosong.');return}
+  var rules;
+  try{rules=parseJSONConfig();updateJSONStatus('ok','\u2713','Valid \u2014 '+rules.length+' aturan')}
+  catch(e){updateJSONStatus('err','\u2715',e.message);showToast('error','\u2715','JSON tidak valid! Perbaiki dulu.');return}
+  var map=new Map();
+  for(var i=0;i<rules.length;i++)map.set(rules[i].abjad,rules[i].trans);
+  var rep=0,result=inp.split('').map(function(ch){if(map.has(ch)){rep++;return map.get(ch)}return ch}).join('');
+  var out=document.getElementById('outputBox');
+  out.textContent=result;out.classList.remove('empty');
+  var ratio=inp.length>0?(result.length/inp.length).toFixed(1):'1.0';
+  document.getElementById('statIn').textContent=inp.length;
+  document.getElementById('statOut').textContent=result.length;
+  document.getElementById('statReplaced').textContent=rep;
+  document.getElementById('statRatio').textContent='\u00d7'+ratio;
+  document.getElementById('statsBar').style.display='flex';
+  showToast('success','\u26a1','Transform selesai. '+rep+' karakter diubah.');
+}
+
+function copyOutput(){
+  var out=document.getElementById('outputBox');
+  if(out.classList.contains('empty')){showToast('error','!','Tidak ada output.');return}
+  navigator.clipboard.writeText(out.textContent).then(function(){
+    var btn=document.getElementById('copyBtn');btn.textContent='Copied!';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied')},2000);
+    showToast('success','\u2713','Disalin ke clipboard!');
+  });
+}
+
+function loadDefault(){
+  _rawJSON=null;
+  document.getElementById('jsonConfig').value=JSON.stringify(DEFAULT_JSON,null,2);
+  autoResizeJSON();
+  document.getElementById('uploadedFileName').style.display='none';
+  document.getElementById('jsonFileInput').value='';
+  updateJSONStatus('idle','\u25c9','Belum divalidasi');
+  updateToggleCount();
+  showToast('success','\u21ba','JSON direset ke default.');
+}
+
+function clearAll(){
+  document.getElementById('inputText').value='';
+  var out=document.getElementById('outputBox');
+  out.textContent='Hasil transformasi akan muncul di sini...';
+  out.classList.add('empty');
+  document.getElementById('statsBar').style.display='none';
+  showToast('success','\u2715','Semua dibersihkan.');
+}
+
+function toggleTheme(){
+  var light=document.documentElement.classList.toggle('light');
+  document.getElementById('themeLabel').textContent=light?'Dark':'Light';
+  localStorage.setItem('tt-theme',light?'light':'dark');
+}
+
+function handleFileUpload(event){
+  var file=event.target.files[0];
+  if(!file)return;
+  if(!file.name.endsWith('.json')&&file.type!=='application/json'){showToast('error','\u2715','Hanya file .json.');return}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var content=e.target.result;
+    _rawJSON=content;
+    var ta=document.getElementById('jsonConfig');ta.value=content;autoResizeJSON();
+    var kb=(content.length/1024).toFixed(1);
+    var el=document.getElementById('uploadedFileName');
+    el.textContent=file.name+' ('+kb+' KB)';el.style.display='block';
+    try{
+      var d=parseJSONConfig();
+      updateJSONStatus('ok','\u2713','Valid \u2014 '+d.length+' aturan');
+      updateToggleCount();
+      showToast('success','\u2191','"'+file.name+'" dimuat. '+d.length+' aturan siap.');
+    }catch(err){
+      updateJSONStatus('err','\u2715','Tidak valid: '+err.message);
+      showToast('error','\u2715','File JSON tidak valid: '+err.message);
+    }
+  };
+  reader.onerror=function(){showToast('error','\u2715','Gagal membaca file.')};
+  reader.readAsText(file,'UTF-8');
+}
+
+function toggleJsonPanel(){document.getElementById('jsonCard').classList.toggle('collapsed')}
+
+function openHelp(){document.getElementById('helpModal').classList.add('open');document.body.style.overflow='hidden'}
+function closeHelp(){document.getElementById('helpModal').classList.remove('open');document.body.style.overflow=''}
+function closeHelpOutside(e){if(e.target===document.getElementById('helpModal'))closeHelp()}
+
+document.getElementById('jsonConfig').addEventListener('input',function(){
+  _rawJSON=null;
+  document.getElementById('uploadedFileName').style.display='none';
+  document.getElementById('jsonFileInput').value='';
+  autoResizeJSON();
+  clearTimeout(_jTimer);
+  updateJSONStatus('idle','\u25c9','Mengetik...');
+  _jTimer=setTimeout(function(){
+    try{var d=parseJSONConfig();updateJSONStatus('ok','\u2713','Valid \u2014 '+d.length+' aturan');updateToggleCount()}
+    catch(e){updateJSONStatus('err','\u2715',e.message)}
+  },600);
+});
+
+var uz=document.getElementById('uploadZone');
+uz.addEventListener('dragover',function(e){e.preventDefault();uz.classList.add('drag-over')});
+uz.addEventListener('dragleave',function(){uz.classList.remove('drag-over')});
+uz.addEventListener('drop',function(e){
+  e.preventDefault();uz.classList.remove('drag-over');
+  var f=e.dataTransfer.files[0];
+  if(f)handleFileUpload({target:{files:[f]}});
+});
+
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();transform()}
+  if(e.key==='Escape')closeHelp();
+});
+
+(function(){
+  if(localStorage.getItem('tt-theme')==='light'){
+    document.documentElement.classList.add('light');
+    document.getElementById('themeLabel').textContent='Dark';
+  }
+  document.getElementById('jsonConfig').value=JSON.stringify(DEFAULT_JSON,null,2);
+  autoResizeJSON();
+  updateJSONStatus('idle','\u25c9','Belum divalidasi');
+  updateToggleCount();
+  if(window.innerWidth<=600)document.getElementById('jsonCard').classList.add('collapsed');
+})();
+</script>
+</body>
+</html>
